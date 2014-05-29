@@ -28,7 +28,7 @@ object SparkBuild extends Build {
   // Hadoop version to build against. For example, "1.0.4" for Apache releases, or
   // "2.0.0-mr1-cdh4.2.0" for Cloudera Hadoop. Note that these variables can be set
   // through the environment variables SPARK_HADOOP_VERSION and SPARK_YARN.
-  val DEFAULT_HADOOP_VERSION = "1.0.4"
+  val DEFAULT_HADOOP_VERSION = "2.3.0-cdh5.0.1"
 
   // Whether the Hadoop version to build against is 2.2.x, or a variant of it. This can be set
   // through the SPARK_IS_NEW_HADOOP environment variable.
@@ -37,7 +37,7 @@ object SparkBuild extends Build {
   val DEFAULT_YARN = false
 
   // HBase version; set as appropriate.
-  val HBASE_VERSION = "0.94.6"
+  val HBASE_VERSION = "0.96.1.1-cdh5.0.1"
 
   // Target JVM version
   val SCALAC_JVM_VERSION = "jvm-1.6"
@@ -117,17 +117,17 @@ object SparkBuild extends Build {
   lazy val allExternal = Seq[ClasspathDependency](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
   lazy val allExternalRefs = Seq[ProjectReference](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
 
-  lazy val examples = Project("examples", file("examples"), settings = examplesSettings)
-    .dependsOn(core, mllib, graphx, bagel, streaming, externalTwitter) dependsOn(allExternal: _*)
+  //lazy val examples = Project("examples", file("examples"), settings = examplesSettings)
+  //  .dependsOn(core, mllib, graphx, bagel, streaming, externalTwitter) dependsOn(allExternal: _*)
 
   // Everything except assembly, tools and examples belong to packageProjects
   lazy val packageProjects = Seq[ProjectReference](core, repl, bagel, streaming, mllib, graphx) ++ maybeYarnRef ++ maybeGangliaRef
 
-  lazy val allProjects = packageProjects ++ allExternalRefs ++ Seq[ProjectReference](examples, tools, assemblyProj)
+  lazy val allProjects = packageProjects ++ allExternalRefs ++ Seq[ProjectReference](/*examples, */tools, assemblyProj)
 
   def sharedSettings = Defaults.defaultSettings ++ Seq(
     organization       := "org.apache.spark",
-    version            := "0.9.0-cdh5.0.1",
+    version            := "0.9.0-cdh5.0.1-wajam",
     scalaVersion       := "2.10.3",
     scalacOptions := Seq("-Xmax-classfile-name", "120", "-unchecked", "-deprecation",
       "-target:" + SCALAC_JVM_VERSION),
@@ -162,6 +162,10 @@ object SparkBuild extends Build {
     // For Sonatype publishing
     resolvers ++= Seq("sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
       "sonatype-staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"),
+
+    resolvers ++= Seq(
+       "JBoss Repository"     at "http://repository.jboss.org/nexus/content/repositories/releases/",
+       "Cloudera Repository"  at "https://repository.cloudera.com/artifactory/cloudera-repos/"),
 
     publishMavenStyle := true,
 
@@ -230,7 +234,7 @@ object SparkBuild extends Build {
     watchTransitiveSources <<= Defaults.inDependencies[Task[Seq[File]]](watchSources.task,
       const(std.TaskExtra.constant(Nil)), aggregate = true, includeRoot = true) apply { _.join.map(_.flatten) },
 
-    otherResolvers := Seq(Resolver.file("dotM2", file(Path.userHome + "/.m2/repository"))),
+    //otherResolvers := Seq(Resolver.file("dotM2", file(Path.userHome + "/.m2/repository"))),
     publishLocalConfiguration in MavenCompile <<= (packagedArtifacts, deliverLocal, ivyLoggingLevel) map {
       (arts, _, level) => new PublishConfiguration(None, "dotM2", arts, Seq(), level)
     },
@@ -275,6 +279,9 @@ object SparkBuild extends Build {
         "net.java.dev.jets3t"      % "jets3t"           % "0.7.1",
         "org.apache.derby"         % "derby"            % "10.4.2.0"                     % "test",
         "org.apache.hadoop"        % "hadoop-client"    % hadoopVersion excludeAll(excludeJackson, excludeNetty, excludeAsm, excludeCglib, excludeOldAsm),
+        "org.apache.hbase"         % "hbase-common"     % HBASE_VERSION excludeAll(excludeJackson, excludeNetty, excludeAsm, excludeCglib, excludeOldAsm),
+        "org.apache.hbase"         % "hbase-protocol"   % HBASE_VERSION excludeAll(excludeJackson, excludeNetty, excludeAsm, excludeCglib, excludeOldAsm),
+        "org.apache.hbase"         % "hbase-client"     % HBASE_VERSION excludeAll(excludeJackson, excludeNetty, excludeAsm, excludeCglib, excludeOldAsm),
         "org.apache.avro"          % "avro"             % "1.7.4",
         "org.apache.avro"          % "avro-ipc"         % "1.7.4" excludeAll(excludeNetty),
         "org.apache.zookeeper"     % "zookeeper"        % "3.4.5" excludeAll(excludeNetty),
