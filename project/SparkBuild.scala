@@ -34,7 +34,7 @@ object SparkBuild extends Build {
   // through the SPARK_IS_NEW_HADOOP environment variable.
   val DEFAULT_IS_NEW_HADOOP = false
 
-  val DEFAULT_YARN = false
+  val DEFAULT_YARN = true
 
   // HBase version; set as appropriate.
   val HBASE_VERSION = "0.96.1.1-cdh5.0.2"
