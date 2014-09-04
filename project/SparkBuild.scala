@@ -32,24 +32,24 @@ import scala.collection.JavaConversions._
 // import com.jsuereth.pgp.sbtplugin.PgpKeys._
 
 object SparkBuild extends Build {
-  val SPARK_VERSION = "1.0.0-cdh5.1.0"
+  val SPARK_VERSION = "1.0.0-cdh5.1.0-wajam"
   val SPARK_VERSION_SHORT = SPARK_VERSION.replaceAll("-SNAPSHOT", "")
 
   // Hadoop version to build against. For example, "1.0.4" for Apache releases, or
   // "2.0.0-mr1-cdh4.2.0" for Cloudera Hadoop. Note that these variables can be set
   // through the environment variables SPARK_HADOOP_VERSION and SPARK_YARN.
-  val DEFAULT_HADOOP_VERSION = "1.0.4"
+  val DEFAULT_HADOOP_VERSION = "2.3.0-cdh5.1.0"
 
   // Whether the Hadoop version to build against is 2.2.x, or a variant of it. This can be set
   // through the SPARK_IS_NEW_HADOOP environment variable.
   val DEFAULT_IS_NEW_HADOOP = false
 
-  val DEFAULT_YARN = false
+  val DEFAULT_YARN = true
 
   val DEFAULT_HIVE = false
 
   // HBase version; set as appropriate.
-  val HBASE_VERSION = "0.94.6"
+  val HBASE_VERSION = "0.98.1-cdh5.1.0"
 
   // Target JVM version
   val SCALAC_JVM_VERSION = "jvm-1.6"
@@ -152,14 +152,14 @@ object SparkBuild extends Build {
   lazy val allExternal = Seq[ClasspathDependency](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
   lazy val allExternalRefs = Seq[ProjectReference](externalTwitter, externalKafka, externalFlume, externalZeromq, externalMqtt)
 
-  lazy val examples = Project("examples", file("examples"), settings = examplesSettings)
-    .dependsOn(core, mllib, graphx, bagel, streaming, hive) dependsOn(allExternal: _*)
+  //lazy val examples = Project("examples", file("examples"), settings = examplesSettings)
+  //  .dependsOn(core, mllib, graphx, bagel, streaming, hive) dependsOn(allExternal: _*)
 
   // Everything except assembly, hive, tools, java8Tests and examples belong to packageProjects
   lazy val packageProjects = Seq[ProjectReference](core, repl, bagel, streaming, mllib, graphx, catalyst, sql) ++ maybeYarnRef ++ maybeHiveRef ++ maybeGangliaRef
 
   lazy val allProjects = packageProjects ++ allExternalRefs ++
-    Seq[ProjectReference](examples, tools, assemblyProj) ++ maybeJava8Tests
+    Seq[ProjectReference](tools, assemblyProj) ++ maybeJava8Tests
 
   def sharedSettings = Defaults.defaultSettings ++ MimaBuild.mimaSettings(file(sparkHome)) ++ Seq(
     organization       := "org.apache.spark",
@@ -349,7 +349,10 @@ object SparkBuild extends Build {
         "commons-net"                % "commons-net"      % "2.2",
         "net.java.dev.jets3t"        % "jets3t"           % jets3tVersion excludeAll(excludeCommonsLogging),
         "org.apache.derby"           % "derby"            % "10.4.2.0"                     % "test",
-        "org.apache.hadoop"          % hadoopClient       % hadoopVersion excludeAll(excludeJBossNetty, excludeAsm, excludeCommonsLogging, excludeSLF4J, excludeOldAsm),
+        "org.apache.hadoop"          % hadoopClient       % hadoopVersion excludeAll(excludeJBossNetty, excludeAsm, excludeCommonsLogging, excludeSLF4J, excludeOldAsm, excludeServletApi),
+        "org.apache.hbase"           % "hbase-common"     % HBASE_VERSION excludeAll(excludeJBossNetty, excludeAsm, excludeCommonsLogging, excludeSLF4J, excludeOldAsm, excludeServletApi),
+        "org.apache.hbase"           % "hbase-protocol"   % HBASE_VERSION excludeAll(excludeJBossNetty, excludeAsm, excludeCommonsLogging, excludeSLF4J, excludeOldAsm, excludeServletApi),
+        "org.apache.hbase"           % "hbase-client"     % HBASE_VERSION excludeAll(excludeJBossNetty, excludeAsm, excludeCommonsLogging, excludeSLF4J, excludeOldAsm, excludeServletApi),
         "org.apache.curator"         % "curator-recipes"  % "2.4.0" excludeAll(excludeJBossNetty),
         "com.codahale.metrics"       % "metrics-core"     % codahaleMetricsVersion,
         "com.codahale.metrics"       % "metrics-jvm"      % codahaleMetricsVersion,
@@ -375,9 +378,9 @@ object SparkBuild extends Build {
     publish := {},
 
     unidocProjectFilter in (ScalaUnidoc, unidoc) :=
-      inAnyProject -- inProjects(repl, examples, tools, catalyst, yarn, yarnAlpha),
+      inAnyProject -- inProjects(repl, tools, catalyst, yarn, yarnAlpha),
     unidocProjectFilter in (JavaUnidoc, unidoc) :=
-      inAnyProject -- inProjects(repl, examples, bagel, graphx, catalyst, tools, yarn, yarnAlpha),
+      inAnyProject -- inProjects(repl, bagel, graphx, catalyst, tools, yarn, yarnAlpha),
 
     // Skip class names containing $ and some internal packages in Javadocs
     unidocAllSources in (JavaUnidoc, unidoc) := {
